@@ -80,6 +80,7 @@ public class ConfigurationServiceTest {
 
         tested.saveConfiguration(configuration);
 
+        verify(configurationRepository, times(1)).deleteAll();
         verify(configurationRepository, times(1)).save(configuration);
     }
 
@@ -87,6 +88,7 @@ public class ConfigurationServiceTest {
     void shouldNotSaveConfigurationWhenNullArgument() {
         assertThrows(IllegalArgumentException.class, () -> tested.saveConfiguration(null));
 
+        verify(configurationRepository, times(0)).deleteAll();
         verify(configurationRepository, times(0)).save(isA(Configuration.class));
     }
 
@@ -94,6 +96,7 @@ public class ConfigurationServiceTest {
     void shouldNotSaveConfigurationValidationError() {
         ConstraintViolationException exception = assertThrows(ConstraintViolationException.class, () -> tested.saveConfiguration(new Configuration()));
 
+        verify(configurationRepository, times(0)).deleteAll();
         verify(configurationRepository, times(0)).save(isA(Configuration.class));
 
         assertEquals(2, exception.getConstraintViolations().size());
@@ -110,6 +113,7 @@ public class ConfigurationServiceTest {
 
         ConstraintViolationException exception = assertThrows(ConstraintViolationException.class, () -> tested.saveConfiguration(configuration));
 
+        verify(configurationRepository, times(0)).deleteAll();
         verify(configurationRepository, times(0)).save(configuration);
 
         assertEquals(1, exception.getConstraintViolations().size());

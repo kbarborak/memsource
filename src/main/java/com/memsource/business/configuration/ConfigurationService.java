@@ -48,7 +48,7 @@ public class ConfigurationService {
     }
 
     /**
-     * Save configuration for Memsource REST API.
+     * Save configuration for Memsource REST API. There is always only the latest configuration record.
      *
      * @param configuration configuration object
      */
@@ -64,6 +64,7 @@ public class ConfigurationService {
             throw new ConstraintViolationException(violations);
         }
 
+        configurationRepository.deleteAll();
         configurationRepository.save(configuration);
     }
 }
