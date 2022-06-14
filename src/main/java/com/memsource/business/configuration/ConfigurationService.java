@@ -1,5 +1,6 @@
 package com.memsource.business.configuration;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -10,7 +11,6 @@ import javax.validation.Validator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -32,23 +32,23 @@ public class ConfigurationService {
     }
 
     /**
-     * Get configuration for Memsource REST API.
-     *
-     * @param username username
+     * Get latest saved configuration.
      */
     @Transactional(readOnly = true)
-    public Optional<Configuration> getConfiguration(final String username) {
-        log.debug("Getting configuration for user {}", username);
+    public Optional<Configuration> getConfiguration() {
+        log.debug("Getting latest configuration");
 
-        if (!StringUtils.hasText(username)) {
+        final List<Configuration> configurations = configurationRepository.findAll();
+
+        if (configurations.isEmpty()) {
             return Optional.empty();
         }
 
-        return configurationRepository.findById(username);
+        return Optional.of(configurations.get(0));
     }
 
     /**
-     * Save configuration for Memsource REST API. There is always only the latest configuration record.
+     * Save configuration. There is always only the latest configuration record.
      *
      * @param configuration configuration object
      */

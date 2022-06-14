@@ -9,7 +9,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.Optional;
+import java.util.Collections;
 
 import javax.validation.ConstraintViolationException;
 
@@ -33,38 +33,34 @@ public class ConfigurationServiceTest {
 
     @Test
     void shouldReturnConfiguration() {
-        var username = "username";
-        var password = "password";
         var configuration = new Configuration();
 
-        configuration.setUsername(username);
-        configuration.setPassword(password);
+        configuration.setUsername("username");
+        configuration.setPassword("password");
 
-        when(configurationRepository.findById(username)).thenReturn(Optional.of(configuration));
+        when(configurationRepository.findAll()).thenReturn(Collections.singletonList(configuration));
 
-        var result = tested.getConfiguration(username);
+        var result = tested.getConfiguration();
 
-        verify(configurationRepository, times(1)).findById(username);
+        verify(configurationRepository, times(1)).findAll();
 
         assertTrue(result.isPresent());
-        assertEquals(username, result.get().getUsername());
-        assertEquals(password, result.get().getPassword());
+        assertEquals(configuration.getUsername(), result.get().getUsername());
+        assertEquals(configuration.getPassword(), result.get().getPassword());
     }
 
     @Test
-    void shouldReturnEmptyConfigurationWhenEmptyUsername() {
-        var result = tested.getConfiguration(" ");
+    void shouldReturnEmptyConfigurationWhenNoData() {
+        var configuration = new Configuration();
 
-        verify(configurationRepository, times(0)).findById(" ");
+        configuration.setUsername("username");
+        configuration.setPassword("password");
 
-        assertFalse(result.isPresent());
-    }
+        when(configurationRepository.findAll()).thenReturn(Collections.emptyList());
 
-    @Test
-    void shouldReturnEmptyConfigurationWhenNullUsername() {
-        var result = tested.getConfiguration(null);
+        var result = tested.getConfiguration();
 
-        verify(configurationRepository, times(0)).findById(null);
+        verify(configurationRepository, times(1)).findAll();
 
         assertFalse(result.isPresent());
     }
