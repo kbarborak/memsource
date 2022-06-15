@@ -5,9 +5,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withBadRequest;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withUnauthorizedRequest;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -58,6 +59,22 @@ public class MemsourceApiServiceTest {
     }
 
     @Test
+    void shouldThrowUnauthorizedExceptionWhenLogin() {
+        this.server.expect(requestTo(new StringEndsWith("/auth/login")))
+            .andRespond(withUnauthorizedRequest());
+
+        assertThrows(UnauthorizedException.class, () -> tested.login(new Credentials("user", "pass")));
+    }
+
+    @Test
+    void shouldThrowApiExceptionWhenLogin() {
+        this.server.expect(requestTo(new StringEndsWith("/auth/login")))
+            .andRespond(withBadRequest());
+
+        assertThrows(ApiException.class, () -> tested.login(new Credentials("user", "pass")));
+    }
+
+    @Test
     void shouldListProjects() throws JsonProcessingException {
         var token = new AuthToken("token");
         var project = new Project();
@@ -90,5 +107,21 @@ public class MemsourceApiServiceTest {
     void shouldThrowExceptionWhenTokenIsNull() {
         assertThrows(IllegalArgumentException.class, () -> tested.listProjects(null));
         assertThrows(IllegalArgumentException.class, () -> tested.listProjects(new AuthToken()));
+    }
+
+    @Test
+    void shouldThrowUnauthorizedExceptionWhenListProjects() {
+        server.expect(requestTo(new StringEndsWith("/projects")))
+            .andRespond(withUnauthorizedRequest());
+
+        assertThrows(UnauthorizedException.class, () -> tested.listProjects(new AuthToken("token")));
+    }
+
+    @Test
+    void shouldThrowApiExceptionWhenListProjects() {
+        server.expect(requestTo(new StringEndsWith("/projects")))
+            .andRespond(withBadRequest());
+
+        assertThrows(ApiException.class, () -> tested.listProjects(new AuthToken("token")));
     }
 }

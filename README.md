@@ -22,7 +22,7 @@ curl -d '{"username": "username", "password": "password"}' -H "Content-Type: app
 
 ## List of available projects
 
-Configuration endpoint must be called first.
+Configuration endpoint must be called first but app will tell you.
 
 ```
 curl http://localhost:8080/api/projects

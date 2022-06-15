@@ -7,9 +7,11 @@ import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import lombok.extern.slf4j.Slf4j;
@@ -42,7 +44,7 @@ public class MemsourceApiService {
 
         Assert.notNull(credentials, "Credentials could not be null");
 
-        final ResponseEntity<AuthToken> loginResponse = restTemplate.postForEntity(memsourceApiUrl + "/auth/login", credentials, AuthToken.class);
+        final ResponseEntity<AuthToken> loginResponse = exchange("/auth/login", HttpMethod.POST, new HttpEntity<>(credentials, null), AuthToken.class);
 
         return new AuthToken(loginResponse.getBody().getToken());
     }
@@ -63,9 +65,30 @@ public class MemsourceApiService {
 
         headers.add(HttpHeaders.AUTHORIZATION, authToken.getHeaderValue());
 
-        final ResponseEntity<ProjectList> projectResponse = restTemplate.exchange(memsourceApiUrl + "/projects", HttpMethod.GET, new HttpEntity<>(null, headers),
-            ProjectList.class);
+        final ResponseEntity<ProjectList> projectResponse = exchange("/projects", HttpMethod.GET, new HttpEntity<>(null, headers), ProjectList.class);
 
         return projectResponse.getBody().getContent();
+    }
+
+    /**
+     * Send request to MemSource api with basic error handling.
+     *
+     * @param path url path
+     * @param method http methd
+     * @param entity entity
+     * @param responseType response type
+     * @return response entity
+     * @param <T> type of response object
+     */
+    private <T> ResponseEntity<T> exchange(final String path, final HttpMethod method, final HttpEntity entity, final Class<T> responseType) {
+        try {
+            return restTemplate.exchange(memsourceApiUrl + path, method, entity, responseType);
+        } catch (HttpClientErrorException ex) {
+            if (ex.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnauthorizedException("Memsource API call resulted in unauthorized access. Please check your configuration.", ex);
+            }
+
+            throw new ApiException(String.format("Memsource API call resulted in error %s.", ex.getMessage()), ex);
+        }
     }
 }
