@@ -42,7 +42,7 @@ public class ConfigurationControllerTest {
         mockMvc.perform(post("/configurations").contentType(MediaType.APPLICATION_JSON).content(configurationPayload.toString()))
             .andExpect(status().isOk());
 
-        verify(configurationService, times(1)).saveConfiguration(configuration);
+        verify(configurationService, times(1)).saveNewConfiguration(configuration);
     }
 
     @Test
@@ -56,7 +56,7 @@ public class ConfigurationControllerTest {
         mockMvc.perform(post("/configurations").contentType(MediaType.APPLICATION_JSON).content(configurationPayload.toString()))
             .andExpect(status().isBadRequest());
 
-        verify(configurationService, times(0)).saveConfiguration(isA(Configuration.class));
+        verify(configurationService, times(0)).saveNewConfiguration(isA(Configuration.class));
     }
 
     @Test
@@ -70,7 +70,7 @@ public class ConfigurationControllerTest {
         mockMvc.perform(post("/configurations").contentType(MediaType.APPLICATION_JSON).content(configurationPayload.toString()))
             .andExpect(status().isBadRequest());
 
-        verify(configurationService, times(0)).saveConfiguration(isA(Configuration.class));
+        verify(configurationService, times(0)).saveNewConfiguration(isA(Configuration.class));
     }
 
     @Test
@@ -84,6 +84,6 @@ public class ConfigurationControllerTest {
         mockMvc.perform(post("/configurations").contentType(MediaType.APPLICATION_JSON).content(configurationPayload.toString()))
             .andExpect(status().isBadRequest());
 
-        verify(configurationService, times(0)).saveConfiguration(isA(Configuration.class));
+        verify(configurationService, times(0)).saveNewConfiguration(isA(Configuration.class));
     }
 }

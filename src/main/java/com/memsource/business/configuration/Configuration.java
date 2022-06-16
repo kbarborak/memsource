@@ -8,7 +8,7 @@ import javax.validation.constraints.Size;
 import lombok.Data;
 
 
-/**s
+/**
  * Configuration domain object.
  */
 @Entity
@@ -22,4 +22,6 @@ public class Configuration {
     @NotBlank
     @Size(min = 12)
     private String password;
+
+    private String token;
 }

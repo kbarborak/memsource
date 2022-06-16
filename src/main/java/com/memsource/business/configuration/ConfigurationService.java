@@ -48,7 +48,7 @@ public class ConfigurationService {
     }
 
     /**
-     * Save configuration. There is always only the latest configuration record.
+     * Save configuration.
      *
      * @param configuration configuration object
      */
@@ -64,7 +64,20 @@ public class ConfigurationService {
             throw new ConstraintViolationException(violations);
         }
 
-        configurationRepository.deleteAll();
         configurationRepository.save(configuration);
+    }
+
+    /**
+     * Save new configuration. There is always only the one latest configuration record.
+     *
+     * @param configuration configuration object
+     */
+    @Transactional
+    public void saveNewConfiguration(final Configuration configuration) {
+        log.debug("Saving new configuration");
+
+        configurationRepository.deleteAll();
+
+        saveConfiguration(configuration);
     }
 }

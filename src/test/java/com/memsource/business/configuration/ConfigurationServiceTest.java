@@ -37,6 +37,7 @@ public class ConfigurationServiceTest {
 
         configuration.setUsername("username");
         configuration.setPassword("password");
+        configuration.setToken("token");
 
         when(configurationRepository.findAll()).thenReturn(Collections.singletonList(configuration));
 
@@ -47,6 +48,7 @@ public class ConfigurationServiceTest {
         assertTrue(result.isPresent());
         assertEquals(configuration.getUsername(), result.get().getUsername());
         assertEquals(configuration.getPassword(), result.get().getPassword());
+        assertEquals(configuration.getToken(), result.get().getToken());
     }
 
     @Test
@@ -66,6 +68,56 @@ public class ConfigurationServiceTest {
     }
 
     @Test
+    void shouldSaveNewConfiguration() {
+        var username = "username";
+        var password = "password1234";
+        var configuration = new Configuration();
+
+        configuration.setUsername(username);
+        configuration.setPassword(password);
+
+        tested.saveNewConfiguration(configuration);
+
+        verify(configurationRepository, times(1)).deleteAll();
+        verify(configurationRepository, times(1)).save(configuration);
+    }
+
+    @Test
+    void shouldNotSaveNewConfigurationWhenNullArgument() {
+        assertThrows(IllegalArgumentException.class, () -> tested.saveNewConfiguration(null));
+
+        verify(configurationRepository, times(1)).deleteAll();
+        verify(configurationRepository, times(0)).save(isA(Configuration.class));
+    }
+
+    @Test
+    void shouldNotSaveNewConfigurationValidationError() {
+        ConstraintViolationException exception = assertThrows(ConstraintViolationException.class, () -> tested.saveNewConfiguration(new Configuration()));
+
+        verify(configurationRepository, times(1)).deleteAll();
+        verify(configurationRepository, times(0)).save(isA(Configuration.class));
+
+        assertEquals(2, exception.getConstraintViolations().size());
+    }
+
+    @Test
+    void shouldNotSaveNewConfigurationShortPassword() {
+        var username = "username";
+        var password = "password";
+        var configuration = new Configuration();
+
+        configuration.setUsername(username);
+        configuration.setPassword(password);
+
+        ConstraintViolationException exception = assertThrows(ConstraintViolationException.class, () -> tested.saveNewConfiguration(configuration));
+
+        verify(configurationRepository, times(1)).deleteAll();
+        verify(configurationRepository, times(0)).save(configuration);
+
+        assertEquals(1, exception.getConstraintViolations().size());
+    }
+
+    @Test
     void shouldSaveConfiguration() {
         var username = "username";
         var password = "password1234";
@@ -76,7 +128,6 @@ public class ConfigurationServiceTest {
 
         tested.saveConfiguration(configuration);
 
-        verify(configurationRepository, times(1)).deleteAll();
         verify(configurationRepository, times(1)).save(configuration);
     }
 
@@ -84,7 +135,6 @@ public class ConfigurationServiceTest {
     void shouldNotSaveConfigurationWhenNullArgument() {
         assertThrows(IllegalArgumentException.class, () -> tested.saveConfiguration(null));
 
-        verify(configurationRepository, times(0)).deleteAll();
         verify(configurationRepository, times(0)).save(isA(Configuration.class));
     }
 
@@ -92,14 +142,13 @@ public class ConfigurationServiceTest {
     void shouldNotSaveConfigurationValidationError() {
         ConstraintViolationException exception = assertThrows(ConstraintViolationException.class, () -> tested.saveConfiguration(new Configuration()));
 
-        verify(configurationRepository, times(0)).deleteAll();
         verify(configurationRepository, times(0)).save(isA(Configuration.class));
 
         assertEquals(2, exception.getConstraintViolations().size());
     }
 
     @Test
-    void shouldSaveConfigurationShortPassword() {
+    void shouldNotSaveConfigurationShortPassword() {
         var username = "username";
         var password = "password";
         var configuration = new Configuration();
@@ -109,7 +158,6 @@ public class ConfigurationServiceTest {
 
         ConstraintViolationException exception = assertThrows(ConstraintViolationException.class, () -> tested.saveConfiguration(configuration));
 
-        verify(configurationRepository, times(0)).deleteAll();
         verify(configurationRepository, times(0)).save(configuration);
 
         assertEquals(1, exception.getConstraintViolations().size());

@@ -1,6 +1,7 @@
 package com.memsource.business.memsource;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -11,26 +12,35 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import com.memsource.business.AssignmentException;
+import com.memsource.business.configuration.Configuration;
+import com.memsource.business.configuration.ConfigurationService;
 import lombok.extern.slf4j.Slf4j;
 
 
 /**
- * Memsource API service.
+ * Memsource API service managing rest calls and auth token reusing.
  */
 @Service
 @Slf4j
 public class MemsourceApiService {
 
+    private final ConfigurationService configurationService;
+
     private final RestTemplate restTemplate;
 
-    @Value("${memsource.api-url}")
     private String memsourceApiUrl;
 
-    public MemsourceApiService(final RestTemplateBuilder restTemplateBuilder) {
+    public MemsourceApiService(final ConfigurationService configurationService, final RestTemplateBuilder restTemplateBuilder,
+        @Value("${memsource.api-url}") final String memsourceApiUrl) {
+
+        this.configurationService = configurationService;
         this.restTemplate = restTemplateBuilder.build();
+        this.memsourceApiUrl = memsourceApiUrl;
     }
 
     /**
@@ -52,22 +62,88 @@ public class MemsourceApiService {
     /**
      * List projects from Memsource API.
      *
-     * @param authToken
      * @return
      */
-    public List<Project> listProjects(final AuthToken authToken) {
+    public List<Project> listProjects() {
         log.debug("Listing projects from Memsource API");
 
-        Assert.notNull(authToken, "AuthToken could not be null");
-        Assert.hasText(authToken.getToken(), "Token could not be empty");
+        final AuthToken authToken = getExistingOrNewAuthToken();
+        final ResponseEntity<ProjectList> projectResponse = exchange("/projects", HttpMethod.GET, new HttpEntity<>(null, getAuthHeader(authToken)),
+            ProjectList.class);
 
+        return projectResponse.getBody().getContent();
+    }
+
+    /**
+     * Get existing token from configuration or new from Memsource API.
+     *
+     * @return auth token
+     */
+    private AuthToken getExistingOrNewAuthToken() {
+        final Optional<Configuration> configuration = configurationService.getConfiguration();
+
+        if (!configuration.isPresent()) {
+            throw new AssignmentException("Configuration is empty. Please call configurations endpoint first.");
+        }
+
+        if (StringUtils.hasText(configuration.get().getToken())) {
+            return getExistingAuthToken(configuration.get());
+        }
+
+        return getNewAuthToken(configuration.get());
+    }
+
+    /**
+     * Get existing auth token.
+     *
+     * @param configuration configuration object
+     * @return existing auth token
+     */
+    private AuthToken getExistingAuthToken(final Configuration configuration) {
+        log.debug("Using existing token from configuration");
+
+        return new AuthToken(configuration.getToken());
+    }
+
+    /**
+     * Get new token from Memsource API.
+     *
+     * @param configuration configuration object
+     * @return new auth token
+     */
+    private AuthToken getNewAuthToken(final Configuration configuration) {
+        log.debug("Obtaining token for first use");
+
+        final AuthToken newAuthToken = login(new Credentials(configuration));
+
+        saveTokenToConfiguration(configuration, newAuthToken);
+
+        return newAuthToken;
+    }
+
+    /**
+     * Save token to configuration for reusing purposes.
+     *
+     * @param configuration configuration object
+     * @param newAuthToken new auth token
+     */
+    private void saveTokenToConfiguration(final Configuration configuration, final AuthToken newAuthToken) {
+        configuration.setToken(newAuthToken.getToken());
+        configurationService.saveConfiguration(configuration);
+    }
+
+    /**
+     * Get auth header for API requests.
+     *
+     * @param authToken auth token
+     * @return auth header
+     */
+    private HttpHeaders getAuthHeader(final AuthToken authToken) {
         final HttpHeaders headers = new HttpHeaders();
 
         headers.add(HttpHeaders.AUTHORIZATION, authToken.getHeaderValue());
 
-        final ResponseEntity<ProjectList> projectResponse = exchange("/projects", HttpMethod.GET, new HttpEntity<>(null, headers), ProjectList.class);
-
-        return projectResponse.getBody().getContent();
+        return headers;
     }
 
     /**

@@ -27,6 +27,6 @@ public class ConfigurationController {
      */
     @PostMapping("/configurations")
     public void saveConfiguration(@Valid @RequestBody final Configuration configuration) {
-        configurationService.saveConfiguration(configuration);
+        configurationService.saveNewConfiguration(configuration);
     }
 }
